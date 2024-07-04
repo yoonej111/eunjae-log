@@ -1,9 +1,10 @@
-# 📃Resume
+# 📃 Resume
 
 ## Info
 
 👩‍💻 Name: Eunjae Yoon
 💻 LinkedIn: @yoonej111
+
 
 ## Propfessional Experiences
 
