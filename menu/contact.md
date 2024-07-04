@@ -1,4 +1,4 @@
-# ☎️ Contact
+# 🎀 Contact
 
 ![Eunjae](img/eunjae.jpeg)
 
