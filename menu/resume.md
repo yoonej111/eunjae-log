@@ -26,3 +26,23 @@
 * Performed hardware troubleshooting and components replacement.
 * Remediated physical layer outages on both systems and network.
 * Participated in a number of local/regional/global projects and team meetings for metric analysis and project status update.
+
+### Server Build Technician / SoftLayer, An IBM Company ( Seoul, Republic of Korea )            
+* June. 2016 – December. 2017
+* Racked, built, cabled, configured, and provisioned servers in a fast-paced enterprise datacenter environment and deployed network equipment such as switches, firewalls, routers, etc.
+* Troubleshooted and resolved problems with basic network and operating system installations and configurations.
+* Professionally resolved hardware issues for global customers via ticketing system: Hardware, Software, RAID, Network, Preventive Maintenance.
+
+### Field Test Engineer (Intern) / BTI Solutions. INC ( New Jersey, United States )                          
+* August. 2014 – June. 2015
+* Evaluated testing procedures, reporting and analysis procedures for wireless protocol performance in Android system.
+* Performed VoLTE, VoIP, VoWifi, ePDG, RCS, SMS over IMS Test cases in VZW live Network.
+* Performed testing failures using QPST and QXDM software for devices with Qualcomm chipset and wrote daily reports based on these analyses.
+
+
+## Education
+
+### BACHELOR OF ENGINEERING
+The Catholic University of Korea
+* Majored in Information, Communication, and Electronics Engineering.
+
