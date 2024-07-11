@@ -7,12 +7,12 @@
 1) 첫 째로, 예측 가능성이다. 블록체인은 투명성과 공개성을 중시하기 때문에 모든 트랜잭션과 블록 정보가 공개된다. 이로 인해, 만약 특정한 알고리즘이나 메서드를 통해 랜덤 난수가 생성된다면 그 과정을 분석해 난수를 예측할 가능성이 생기게 된다
 2) 두 번째는, 조작 가능성이다. 블록체인은 분산 시스템으로 각 노드는 블록을 생성할 때 경제적 인센티브를 받게 되는데, 만약 블록 생성 과정에서 특정 난수 값이 유리하게 작용할 수 있다면 채굴자들은 자신에게 유리한 난수를 생성하기 위해 블록을 조작할 수 있다.
 
-keccak 함수를 사용하여 솔리디티 자체적으로 난수 생성이 불가능한 것은 아니지만 예측 가능한 랜덤 난수는, 난수의 기능을 하지 못한다고도 볼 수 있다. 이제 체인링크 VRF COORDINATOR, CONSUMEMR 컨트랙트를 살펴보자. 
+keccak 함수를 사용하여 솔리디티 자체적으로 난수 생성이 불가능한 것은 아니지만 예측 가능한 랜덤 난수는, 난수의 기능을 하지 못한다고도 볼 수 있다. 이제 체인링크 VRF COORDINATOR, CONSUMEMR 컨트랙트의 함수들을 살펴보자. 
 
 
 #### 1. 어떻게 랜덤난수를 받아와 사용하는가?
 
-![keccak256](img/blog/image.png)
+![image](img/blog/image.png)
 
 체인링크 VRF는 어떻게 이용하면 되는지는 아래와 같이 간단히 정리할 수 있다. 참고로, VRF 사용 방식에는 Direct Funding 방식과 구독 방식이 있는데 위 예제는 구독 방식이다.
 
@@ -42,12 +42,21 @@ VRFCoordinatorV2.sol 컨트랙트는은 VRF 요청과 이행을 관리하는 체
 그럼 코드를 하나하나 뜯어 보면서 위 기능들을 살펴보자. 코드는 아래 github 에서 확인 가능하다.
 [VRF Coorinator Github Link](https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/vrf/VRFCoordinatorV2.sol)
 
-1. constructor
+**1. constructor**
 
-```solidity
+```javascript
 constructor(address link, address blockhashStore, address linkEthFeed) ConfirmedOwner(msg.sender) {
     LINK = LinkTokenInterface(link);
     LINK_ETH_FEED = AggregatorV3Interface(linkEthFeed);
     BLOCKHASH_STORE = BlockhashStoreInterface(blockhashStore);
 }
 ```
+
+* **link:** LINK 토큰 컨트랙트의 주소이다.
+* **blockhashStore:** BlockhashStore 컨트랙트의 주소이다. BlockhashStore는 블록체인의 블록 해시를 저장하고 조회하는 기능을 제공하는 컨트랙트인데, 블록 해시는 블록체인의 블록을 고유하게 식별하는 값으로, 스마트 컨트랙트 내에서 과거 블록의 해시를 안전하게 저장하고 나중에 참조할 수 있도록 한다.
+[BlockhashStore](https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/vrf/dev/BlockhashStore.sol)
+* **linkEthFeed:** Chainlink ETH 가격 피드 컨트랙트의 주소이다. linkEthfeed는 체인링크의 오라클 네트워크를 통해 ETH와 LINK 간의 최신 환율 정보를 제공하는 컨트랙트이다. 이를 통해 스마트 컨트랙트가 실시간으로 LINK와 ETH 간의 환율을 조회하고 사용할 수 있게 된다.
+[AggregatorV3Interface](https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol)
+
+
+**2. registerProvingKey**
