@@ -52,6 +52,7 @@ constructor(address link, address blockhashStore, address linkEthFeed) Confirmed
 }
 ```
 
+**input 매개변수**
 * **link:** LINK 토큰 컨트랙트의 주소이다.
 * **blockhashStore:** BlockhashStore 컨트랙트의 주소이다. BlockhashStore는 블록체인의 블록 해시를 저장하고 조회하는 기능을 제공하는 컨트랙트인데, 블록 해시는 블록체인의 블록을 고유하게 식별하는 값으로, 스마트 컨트랙트 내에서 과거 블록의 해시를 안전하게 저장하고 나중에 참조할 수 있도록 한다.
 [BlockhashStore](https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/vrf/dev/BlockhashStore.sol)
@@ -60,3 +61,151 @@ constructor(address link, address blockhashStore, address linkEthFeed) Confirmed
 
 
 **2. registerProvingKey**
+
+```javascript
+function registerProvingKey(address oracle, uint256[2] calldata publicProvingKey) external onlyOwner {
+    bytes32 kh = hashOfKey(publicProvingKey);
+    if (s_provingKeys[kh] != address(0)) {
+      revert ProvingKeyAlreadyRegistered(kh);
+    }
+    s_provingKeys[kh] = oracle;
+    s_provingKeyHashes.push(kh);
+    emit ProvingKeyRegistered(kh, oracle);
+}
+```
+
+이 함수는 오라클이 사용할 수 있는 공개 증명키(Public Proving Key) 를 등록하는 데 사용되는 함수이다.
+
+**input 매개변수**
+* **oracle:** 사용할 oracle 의 주소이다.
+* **publicProvingKey:** 공개증명 키이다. 이는 VRF 작업을 수행할 때 사용되는 키이며, 변경되지 않는 읽기 전용 데이터인 'calldata'로 지정되어 함수 호출 시 전달되는 입력 데이터로 취급된다.
+
+**함수 설명**
+* **registerProvingKey** 함수는 external 로 선언되어 외부에서만 호출이 가능하며 onlyOnwer modifier로 지정되어 있어 컨트랙트 소유자만이 호출할 수 있다.
+* **hashOfKey** 함수를 사용하여 **publicProvingKey** 로부터 해시를 계산해 kh에 저장한다.
+* 위에서 계산된 hash가 이미 등록되 키인지 확인하고 (**s_provingKeys[kh] != address(0)**), 그렇다면 **ProvingKeyAlreadyRegistered** 에러를 발생시킨다.
+* 등록되지 않은 키라면 해시된 키를 키 값으로 oracle 주소를 저장하고, 해시된 키를 **s_provingKeyHashes** 배열에 추가한다.
+* 위 과정이 완료되었다면, 이벤트를 발생시켜 키가 성공적으로 등록되었음을 알린다. (**emit ProvingKeyRegistered(kh, oracle)**)
+
+
+**3. hashOfKey**
+
+```javascript
+function hashOfKey(uint256[2] memory publicKey) public pure returns (bytes32) {
+    return keccak256(abi.encode(publicKey));
+}
+```
+
+publicKey 를 입력받아 keccak256을 돌려 반환하는 함수이다.
+
+**input 매개변수**
+* **publicKey:** 공개증명 키이다. 
+
+**함수 설명**
+* keccak256을 사용하면 어떤 값이 들어와도 고정된 길이의 값이 리턴된다. keccak256에 대한 내용은 이전에 적어둔 글에서도 확인 가능하다.
+[Keccak256을](https://yoonej111.github.io/eunjae-log/?post=%5B20240706%5D_%5BKeccak256%5D_%5Balgorithm%5D_%5Balgorithm.jpg%5D_%5Bkeccak256%EC%9D%98+%EC%9E%91%EB%8F%99%EC%9B%90%EB%A6%AC%5D_%5B%5D.md)
+
+
+**4. deregisterProvingKey**
+
+```javascript
+function deregisterProvingKey(uint256[2] calldata publicProvingKey) external onlyOwner {
+    bytes32 kh = hashOfKey(publicProvingKey);
+    address oracle = s_provingKeys[kh];
+    if (oracle == address(0)) {
+      revert NoSuchProvingKey(kh);
+    }
+    delete s_provingKeys[kh];
+    for (uint256 i = 0; i < s_provingKeyHashes.length; i++) {
+      if (s_provingKeyHashes[i] == kh) {
+        bytes32 last = s_provingKeyHashes[s_provingKeyHashes.length - 1];
+        // Copy last element and overwrite kh to be deleted with it
+        s_provingKeyHashes[i] = last;
+        s_provingKeyHashes.pop();
+      }
+    }
+    emit ProvingKeyDeregistered(kh, oracle);
+}
+```
+
+이 함수는 등록된 provingKey를 해제하는 역할을 한다. 이 과정에서 해시 계산, 키 존재 여부 확인, 매핑 삭제, 배열 요소 삭제 등 이벤트 발생 등의 단계를 거친다.
+
+**input 매개변수**
+* **publicProvingKey:** 컨트랙트에서 삭제하고자 하는 publicProvingKey를 입력해준다.
+
+**함수 설명**
+* **deregisterProvingKey** 함수도 external, onlyOwner로 지정되어 있어 컨트랙트 오너만 외부에서 호출 가능하다.
+* 등록할때와 마찬가지로 **hashOfKey** 를 사용하여 해시를 계산한다.
+* 등록된 키가 없는 경우(**oracle == address(0)**), 에러를 발생 시킨다. (**revert NoSuchProvingKey(kh)**)
+* **s_provingKey** 에 매핑되어 있는 값을 삭제하고, s_provingKeyHashes 배열에 있는 값을 삭제한다. 이 때, 마지막 값을 가져와 삭제할 값에 덮어쓰고 pop을 사용해 마지막 값을 제거한다.
+* 위 작업이 완료되면, 이벤트를 발생시켜 키가 성공적으로 deregister 되었음을 알린다.(**emit ProvingKeyDeregistered(kh, oracle)**)
+
+
+**5. setConfig**
+
+```javascript
+function setConfig(
+    uint16 minimumRequestConfirmations,
+    uint32 maxGasLimit,
+    uint32 stalenessSeconds,
+    uint32 gasAfterPaymentCalculation,
+    int256 fallbackWeiPerUnitLink,
+    FeeConfig memory feeConfig
+  ) external onlyOwner {
+    if (minimumRequestConfirmations > MAX_REQUEST_CONFIRMATIONS) {
+      revert InvalidRequestConfirmations(
+        minimumRequestConfirmations,
+        minimumRequestConfirmations,
+        MAX_REQUEST_CONFIRMATIONS
+      );
+    }
+    if (fallbackWeiPerUnitLink <= 0) {
+      revert InvalidLinkWeiPrice(fallbackWeiPerUnitLink);
+    }
+    s_config = Config({
+      minimumRequestConfirmations: minimumRequestConfirmations,
+      maxGasLimit: maxGasLimit,
+      stalenessSeconds: stalenessSeconds,
+      gasAfterPaymentCalculation: gasAfterPaymentCalculation,
+      reentrancyLock: false
+    });
+    s_feeConfig = feeConfig;
+    s_fallbackWeiPerUnitLink = fallbackWeiPerUnitLink;
+    emit ConfigSet(
+      minimumRequestConfirmations,
+      maxGasLimit,
+      stalenessSeconds,
+      gasAfterPaymentCalculation,
+      fallbackWeiPerUnitLink,
+      s_feeConfig
+    );
+}
+```
+이 함수는 컨트랙트의 설정 값을 언데이트하는 함수이다. 다양한 설정 값들 (minimumRequestConfirmations, maxGasLimit, stalenessSeconds, gasAfterPaymentCalculation, reentrancyLock) 을 입력으로 받아 내부 상태 변수를 업데이트 한다.
+
+**input 매개변수**
+* **minimumRequestConfirmations:** 요청이 완료되기 위해 블록체인 네트워크 내에서 필요한 최소한의 블록 확인 수를 설정한다.
+* **maxGasLimit:** 요청을 처리하는 데 사용할 수 있는 최대 가스 한도를 설정한다.
+* **stalenessSeconds:** 데이터가 유효한다고 간주할 수 있는 최대 시간을 설정한다.
+* **gasAfterPaymentCalculation:** 가스비 계산이 완료된 후 추가로 필요한 가스 양을 설정한다.
+* **fallbackWeiPerUnitLink:** LINK 토큰의 기본 가격을 Wei 단위로 나타낸다.
+* **feeConfig**: 요청을 처리할 때 적용되는 다양한 수수료 설정을 담고 있다.
+```javascript
+struct FeeConfig {
+    // Flat fee charged per fulfillment in millionths of link
+    // So fee range is [0, 2^32/10^6].
+    uint32 fulfillmentFlatFeeLinkPPMTier1;
+    uint32 fulfillmentFlatFeeLinkPPMTier2;
+    uint32 fulfillmentFlatFeeLinkPPMTier3;
+    uint32 fulfillmentFlatFeeLinkPPMTier4;
+    uint32 fulfillmentFlatFeeLinkPPMTier5;
+    uint24 reqsForTier2;
+    uint24 reqsForTier3;
+    uint24 reqsForTier4;
+    uint24 reqsForTier5;
+}
+```
+
+
+
+**함수 설명**
