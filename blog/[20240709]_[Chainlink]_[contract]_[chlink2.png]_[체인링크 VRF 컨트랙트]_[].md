@@ -42,7 +42,7 @@ VRFCoordinatorV2.sol 컨트랙트는은 VRF 요청과 이행을 관리하는 체
 그럼 코드를 하나하나 뜯어 보면서 위 기능들을 살펴보자. 코드는 아래 github 에서 확인 가능하다.
 [VRF Coorinator Github Link](https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/vrf/VRFCoordinatorV2.sol)
 
-**1. constructor**
+##### **1. constructor**
 
 ```javascript
 constructor(address link, address blockhashStore, address linkEthFeed) ConfirmedOwner(msg.sender) {
@@ -60,7 +60,7 @@ constructor(address link, address blockhashStore, address linkEthFeed) Confirmed
 [AggregatorV3Interface](https://github.com/smartcontractkit/chainlink/blob/develop/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol)
 
 
-**2. registerProvingKey**
+##### **2. registerProvingKey**
 
 ```javascript
 function registerProvingKey(address oracle, uint256[2] calldata publicProvingKey) external onlyOwner {
@@ -88,7 +88,7 @@ function registerProvingKey(address oracle, uint256[2] calldata publicProvingKey
 * 위 과정이 완료되었다면, 이벤트를 발생시켜 키가 성공적으로 등록되었음을 알린다. (**emit ProvingKeyRegistered(kh, oracle)**)
 
 
-**3. hashOfKey**
+##### **3. hashOfKey**
 
 ```javascript
 function hashOfKey(uint256[2] memory publicKey) public pure returns (bytes32) {
@@ -106,7 +106,7 @@ publicKey 를 입력받아 keccak256을 돌려 반환하는 함수이다.
 [Keccak256을](https://yoonej111.github.io/eunjae-log/?post=%5B20240706%5D_%5BKeccak256%5D_%5Balgorithm%5D_%5Balgorithm.jpg%5D_%5Bkeccak256%EC%9D%98+%EC%9E%91%EB%8F%99%EC%9B%90%EB%A6%AC%5D_%5B%5D.md)
 
 
-**4. deregisterProvingKey**
+##### **4. deregisterProvingKey**
 
 ```javascript
 function deregisterProvingKey(uint256[2] calldata publicProvingKey) external onlyOwner {
@@ -141,7 +141,7 @@ function deregisterProvingKey(uint256[2] calldata publicProvingKey) external onl
 * 위 작업이 완료되면, 이벤트를 발생시켜 키가 성공적으로 deregister 되었음을 알린다.(**emit ProvingKeyDeregistered(kh, oracle)**)
 
 
-**5. setConfig**
+##### **5. setConfig**
 
 ```javascript
 function setConfig(
@@ -152,6 +152,7 @@ function setConfig(
     int256 fallbackWeiPerUnitLink,
     FeeConfig memory feeConfig
   ) external onlyOwner {
+    // 요청 확인 수가 최대 허용값을 초과하는 경우 오류 발생
     if (minimumRequestConfirmations > MAX_REQUEST_CONFIRMATIONS) {
       revert InvalidRequestConfirmations(
         minimumRequestConfirmations,
@@ -159,9 +160,11 @@ function setConfig(
         MAX_REQUEST_CONFIRMATIONS
       );
     }
+    // LINK가격이 0 이하인 경우 오류 발생
     if (fallbackWeiPerUnitLink <= 0) {
       revert InvalidLinkWeiPrice(fallbackWeiPerUnitLink);
     }
+    // 설정 값을 업데이트
     s_config = Config({
       minimumRequestConfirmations: minimumRequestConfirmations,
       maxGasLimit: maxGasLimit,
@@ -190,22 +193,10 @@ function setConfig(
 * **gasAfterPaymentCalculation:** 가스비 계산이 완료된 후 추가로 필요한 가스 양을 설정한다.
 * **fallbackWeiPerUnitLink:** LINK 토큰의 기본 가격을 Wei 단위로 나타낸다.
 * **feeConfig**: 요청을 처리할 때 적용되는 다양한 수수료 설정을 담고 있다.
-```javascript
-struct FeeConfig {
-    // Flat fee charged per fulfillment in millionths of link
-    // So fee range is [0, 2^32/10^6].
-    uint32 fulfillmentFlatFeeLinkPPMTier1;
-    uint32 fulfillmentFlatFeeLinkPPMTier2;
-    uint32 fulfillmentFlatFeeLinkPPMTier3;
-    uint32 fulfillmentFlatFeeLinkPPMTier4;
-    uint32 fulfillmentFlatFeeLinkPPMTier5;
-    uint24 reqsForTier2;
-    uint24 reqsForTier3;
-    uint24 reqsForTier4;
-    uint24 reqsForTier5;
-}
-```
-
-
 
 **함수 설명**
+* **setConfig** 함수도 external, onlyOwner로 지정되어 있어 컨트랙트 오너만 외부에서 호출 가능하다.
+* 요청 확인 수가 최대 허용값을 초과하는 경우(**(minimumRequestConfirmations > MAX_REQUEST_CONFIRMATIONS)**), 오류를 발생 시킨다. (**revert InvalidRequestConfirmations**)
+* LINK 가격이 0 이하인 경우에도 오류를 발생시킨다. (**fallbackWeiPerUnitLink <= 0**)
+* 위 과정을 완료하면, **s_config, s_feeConfig, s_fallbackWeiPerUnitLink** 값을 업데이트한다.
+* 마지막으로 설정값이 변경되었다는 **ConfigSet** 이벤트를 발생킨다.
