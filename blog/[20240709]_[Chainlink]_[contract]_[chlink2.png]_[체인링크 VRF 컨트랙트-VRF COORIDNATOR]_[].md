@@ -200,3 +200,145 @@ function setConfig(
 * LINK 가격이 0 이하인 경우에도 오류를 발생시킨다. (**fallbackWeiPerUnitLink <= 0**)
 * 위 과정을 완료하면, **s_config, s_feeConfig, s_fallbackWeiPerUnitLink** 값을 업데이트한다.
 * 마지막으로 설정값이 변경되었다는 **ConfigSet** 이벤트를 발생킨다.
+
+
+##### **5. setConfig**
+
+```javascript
+function getConfig()
+    external
+    view
+    returns (
+      uint16 minimumRequestConfirmations,
+      uint32 maxGasLimit,
+      uint32 stalenessSeconds,
+      uint32 gasAfterPaymentCalculation
+    )
+  {
+    return (
+      s_config.minimumRequestConfirmations,
+      s_config.maxGasLimit,
+      s_config.stalenessSeconds,
+      s_config.gasAfterPaymentCalculation
+    );
+  }
+```
+이 함수는 컨트랙트의 설정 값을 조회하는 함수이다.
+
+**함수 설명**
+* 외부에서 호출 가능한 상태를 변경하지 않는 조회 함수이다. 이 함수를 통해 아래와 같이 네가지 설정 값 확인이 가능하다.
+1. minimumRequestConfirmations: 최소 요청 확인 횟수
+2. maxGasLimit: 최대 가스 한도
+3. stalenessSeconds: 데이터의 최대 허용 시간
+4. gasAfterPaymentCalculation: 결제 계산 후의 가스 양
+
+
+##### **6. getConfig**
+```javascript
+function getFeeConfig()
+    external
+    view
+    returns (
+      uint32 fulfillmentFlatFeeLinkPPMTier1,
+      uint32 fulfillmentFlatFeeLinkPPMTier2,
+      uint32 fulfillmentFlatFeeLinkPPMTier3,
+      uint32 fulfillmentFlatFeeLinkPPMTier4,
+      uint32 fulfillmentFlatFeeLinkPPMTier5,
+      uint24 reqsForTier2,
+      uint24 reqsForTier3,
+      uint24 reqsForTier4,
+      uint24 reqsForTier5
+    )
+  {
+    return (
+      s_feeConfig.fulfillmentFlatFeeLinkPPMTier1,
+      s_feeConfig.fulfillmentFlatFeeLinkPPMTier2,
+      s_feeConfig.fulfillmentFlatFeeLinkPPMTier3,
+      s_feeConfig.fulfillmentFlatFeeLinkPPMTier4,
+      s_feeConfig.fulfillmentFlatFeeLinkPPMTier5,
+      s_feeConfig.reqsForTier2,
+      s_feeConfig.reqsForTier3,
+      s_feeConfig.reqsForTier4,
+      s_feeConfig.reqsForTier5
+    );
+  }
+```
+
+이 함수는 스마트 컨트랙트에 설정되어 있는 수수료를 조회하는 함수이다. 실제 배포되어 있는 컨트랙트에 해당 함수가 조회되지 않는 걸 보면 아마 실제 라이브 버전에서 이 함수는 빠져 있는 듯하고 아마 많이 사용하면 할수록 서비스 비용을 할인해주는 기능을 추가하려고 했던 게 아닌가 생각이 든다.
+
+**함수 설명**
+* 외부에서 호출 가능한 상태를 변경하지 않는 조회 함수이며 아홉가지 설정 값을 반환한다.
+1. fulfillmentFlatFeeLinkPPMTier1: 티어 1에 대한 고정 수수료
+2. fulfillmentFlatFeeLinkPPMTier2: 티어 2에 대한 고정 수수료
+3. fulfillmentFlatFeeLinkPPMTier3: 티어 3에 대한 고정 수수료
+4. fulfillmentFlatFeeLinkPPMTier4: 티어 4에 대한 고정 수수료
+5. fulfillmentFlatFeeLinkPPMTier5: 티어 5에 대한 고정 수수료
+6. reqsForTier2: 티어 2로 올라가기 위한 요청 수
+7. reqsForTier3: 티어 3으로 올라가기 위한 요청 수
+8. reqsForTier4: 티어 4로 올라가기 위한 요청 수
+9. reqsForTier5: 티어 5로 올라가기 위한 요청 수
+
+##### **8. getTotalBalance**
+
+```javascript
+function getTotalBalance() external view returns (uint256) {
+    return s_totalBalance;
+  }
+```
+
+**함수 설명**
+* Coordinator가 보유하고 있는 LINK의 잔액을 보여주는 함수이다.
+
+
+##### **9. getFallbackWeiPerUnitLink**
+
+```javascript
+function getFallbackWeiPerUnitLink() external view returns (int256) {
+    return s_fallbackWeiPerUnitLink;
+  }
+```
+
+**함수 설명**
+* LINK당 fallbackwei 값을 알려주는 함수이다.
+
+
+##### **10. ownerCancelSubscription**
+
+```javascript
+function ownerCancelSubscription(uint64 subId) external onlyOwner {
+    if (s_subscriptionConfigs[subId].owner == address(0)) {
+      revert InvalidSubscription();
+    }
+    _cancelSubscriptionHelper(subId, s_subscriptionConfigs[subId].owner);
+  }
+```
+
+```javascript
+function _cancelSubscriptionHelper(uint64 subId, address to) private nonReentrant {
+    SubscriptionConfig memory subConfig = s_subscriptionConfigs[subId];
+    Subscription memory sub = s_subscriptions[subId];
+    uint96 balance = sub.balance;
+    for (uint256 i = 0; i < subConfig.consumers.length; i++) {
+      delete s_consumers[subConfig.consumers[i]][subId];
+    }
+    delete s_subscriptionConfigs[subId];
+    delete s_subscriptions[subId];
+    s_totalBalance -= balance;
+    if (!LINK.transfer(to, uint256(balance))) {
+      revert InsufficientBalance();
+    }
+    emit SubscriptionCanceled(subId, to, balance);
+  }
+```
+
+
+
+**input 매개변수**
+* **subId:** subscriptionId
+
+**함수 설명**
+* external, onlyOwner로 지정되어 있어 컨트랙트 오너만 외부에서 호출 가능하다.
+* subId 의 owner가 address(0) 이면 유효하지 않은 subscription을 의미하므로 **InvalidSubscription()** 에러를 발생시킨다.
+* 유효성 체크에서 이상이 없었다면, _cancelSubscriptionHelper 를 호출하여 구독을 취소하고 남은 LINK 토큰을 지정된 주소로 전송하는 역할을 한다.
+
+
