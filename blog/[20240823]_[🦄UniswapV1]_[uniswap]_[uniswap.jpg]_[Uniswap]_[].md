@@ -28,7 +28,7 @@ CPMM에서 모든 거래는 거래후에 변경된 변경된 X와 Y의 곱이 �
 
 현재 ETH/DAI에 아래와 같이 유동성이 공급되어 있다고 가정해보고, 10 ETH 를 DAI 로 스왑해보면서 수치를 비교해보자.
 
-1) 
+1.
 ##### 거래 전
 * **Pair:** ETH/DAI
 * **Liquidity:** 100ETH / 1000 DAI
@@ -38,7 +38,7 @@ CPMM에서 모든 거래는 거래후에 변경된 변경된 X와 Y의 곱이 �
 * **Liquidity:** 110ETH / 909.1 DAI
 * **Buyer에게 지급한 금액:** 90.9 DAI
 
-2)
+2.
 ##### 거래 전
 * **Pair:** ETH/DAI
 * **Liquidity:** 1000ETH / 10000 DAI
