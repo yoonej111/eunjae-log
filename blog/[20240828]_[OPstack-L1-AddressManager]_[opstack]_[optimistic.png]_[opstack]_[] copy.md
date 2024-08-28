@@ -54,7 +54,7 @@ contract AddressManager is Ownable {
 `AddressManager` 는 문자열 이름을 주소와 매핑하는 레지스트리를 관리한다. 이는 Optimism 시스템의 이전 버전과의 하위 호환성을 위해 사용된다. 현재는 더 표준적인 프록시 시스템을 사용하지만, 과거의 여러 계약과의 호환성을 유지하기 위해 이 계약이 여전히 필요하다.
 
 1. **상속**
-    - `AddressManager`는 OpenZeppelin의 `Ownable` 계약을 상속받아, 소유자만 특정 기능을 수행할 수 있도록 제한한다.
+    - `AddressManager`는 OpenZeppelin의 `Ownable` 컨트랙트를 상속받아, 소유자만 특정 기능을 수행할 수 있도록 제한한다.
 2. **매핑** 
     - `addresses`라는 `mapping(bytes32 => address)`를 통해 문자열 이름의 해시를 주소와 매핑한다.
 3. **이벤트**
